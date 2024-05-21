@@ -6,8 +6,8 @@
 // @author       qubodup
 // @match        https://freesound.org/tickets/moderation/
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
+// @require      https://gist.githubusercontent.com/arantius/eec890c9ce4ff2f7abee896c0bba664d/raw/14bb06f60ba6dc12c0bc72fe4c69443f67ff26de/gm-addstyle.js
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
-// @grant        GM_addStyle
 // ==/UserScript==
 
 (function() {
@@ -115,7 +115,7 @@
         $(this).find('span.bw-icon-plus').removeClass('bw-icon-plus');
 
         // add/toggle/remove prefer (favorite)/block buttons
-        $(bottom_bar).after('<a class="btn-inverse no-hover fsmciu_toggle_prefer" href="javascript:void(0);">★</a><a class="btn-inverse no-hover fsmciu_toggle_ignore" href="javascript:void(0);">🛇</a>');
+        $(bottom_bar).after('<a title="favorite" class="btn-inverse no-hover fsmciu_toggle_prefer" href="javascript:void(0);">★</a><a title="ignore" class="btn-inverse no-hover fsmciu_toggle_ignore" href="javascript:void(0);">🛇</a>');
         $(this).find('.fsmciu_toggle_prefer').click(function(){
             // already added
             if ( $(this).parent().parent().hasClass('fsmciu_prefer') ) {
