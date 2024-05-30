@@ -14,7 +14,10 @@ Compacts users and lets you filter them
 * Adds favorite/ignore button for each user
 * Information is stored in localStorage, will be lost when clearing cache etc and cannot yet be backed up
 * UX enhancement: Clicking outside a modal closes it, you don't have to pixel hunt the x
-
+* UX enhancement: Ticket views (tardy moderators/users, pending sound modals) get decluttered
+* Assign all visible button added
+* Assign all button has now a pop-up warning
+  
 ## how to install
 
 1. Have Tampermonkey (Chrome) or Greasemonkey (Firefox) extension installed in your browser
@@ -22,8 +25,3 @@ Compacts users and lets you filter them
 3. Create a new script in the Tampermonkey/Greasemonkey extension
 4. Paste the text (overwriting the defaults) and save
 5. Navigate to https://freesound.org/tickets/moderation/ and enjoy
-
-## warning
-
-The "Assign all new sounds" button will assign ALL new sounds (even the ones not currently shown due to the filter). I recommend using middle-mouse clicks on user's "Assign" buttons to assign them in the background.
-
