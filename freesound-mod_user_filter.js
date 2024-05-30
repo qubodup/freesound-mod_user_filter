@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Compact & Ignored Users in Freesound Moderation
 // @namespace    https://qubodup.github.io/
-// @version      2024-05-21
+// @version      2024-05-30
 // @description  Reduce burnout
 // @author       qubodup
 // @match        https://freesound.org/tickets/moderation/
+// @match        https://freesound.org/tickets/moderation/?*
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js
 // @require      https://gist.githubusercontent.com/arantius/eec890c9ce4ff2f7abee896c0bba664d/raw/14bb06f60ba6dc12c0bc72fe4c69443f67ff26de/gm-addstyle.js
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
@@ -53,6 +54,14 @@
         if (index !== -1) array.splice(index, 1);
     }
 
+    // https://stackoverflow.com/a/2587356/188159
+    jQuery.fn.cleanWhitespace = function() {
+        this.contents().filter(
+            function() { return (this.nodeType == 3 && !/\S/.test(this.nodeValue)); })
+            .remove();
+        return this;
+    }
+
     localLoad();
 
     // CSS
@@ -72,7 +81,11 @@
                  .fsmciu_item.fsmciu_ignore .start { background: linear-gradient(45deg, white 85%, lightgrey 85%); }
                  .fsmciu_item.fsmciu_prefer .fsmciu_toggle_prefer,
                  .fsmciu_item.fsmciu_ignore .fsmciu_toggle_ignore { color: white; background-color: grey; }
-                 .fsmciu_item.fsmciu_hidden { display: none; }
+                 .fsmciu_item.fsmciu_hidden, .fsmciu_button_hiddern { display: none; }
+                 .fsmciu_ticket {  }
+                 .fsmciu_assign_all { color: grey; background-color: white; border: 1px solid grey; margin: auto 20px auto 0; }
+                 .fsmciu_iframe { width:25%; height:25px; float: left; }
+                 .fsmciu_clear { clear: both; }
                  `);
 
     // each user item
@@ -191,7 +204,97 @@
         localSave();
     })
 
+    // mark "+ assign all new sounds to me" button as dangerous
+    let assign_all = $('body > div.bw-page > div > div > div.col-12.no-paddings.v-spacing-5 > div:nth-child(4) > div.v-spacing-top-4.center > a[href="/tickets/moderation/assign/new/"]');
+    $(assign_all).html('<span class="bw-icon-plus"> </span>Assign all*');
+    //$(assign_all).prop('href', 'javascript:void(0);');
+    $(assign_all).prop('title', 'Assigns ALL unassigned sound tickets, both visible and invisible/filtered—YOU HAVE BEEN WARNED');
+    $(assign_all).addClass('fsmciu_assign_all');
+    $(assign_all).click( function(e) {
+        if (!confirm('Assign all sound tickets, even if they are invisible (filtered out)?')) e.preventDefault();
+    });
+
+    // add "assign visible" button
+    let fsmciu_assign_visible = $(assign_all).after('<a href="javascript:void(0);" class="btn-primary no-hover fsmciu_assign_visible" title="Assigns all currently visible users\' tickets by opening each assignment link in an iframe"><span class="bw-icon-plus "> </span>Assign only visible</a>');
+
+    $(fsmciu_assign_visible).parent().after('<div class="fsmciu_iframes"></div>');
+
+    // assign all visible interaction
+    $('.fsmciu_assign_visible').click(function() {
+        $('.fsmciu_item:not(.fsmciu_hidden):not(.fsmciu_assigned)').each( function() {
+            $(this).addClass('fsmciu_assigned');
+            let assign_url = $(this).find('a[href^="/tickets/moderation/assign/"').attr('href');
+            $('.fsmciu_iframes').append('<iframe class="fsmciu_iframe" src="' + assign_url + '" /></iframe>');
+
+        });
+        if ($('.fsmciu_clear').length == 0) {
+            $('.fsmciu_iframes').append("<div class='fsmciu_clear'>No need to wait for the iframes. You can try <a href='" + $('.nav-link[href^="/tickets/moderation/assigned/"]').prop('href') + "'>moderating</a> immediately.</div>");
+        }
+    });
+
     // initial filter
     filterUsers();
+
+    // ticket cleanup
+
+    function ticketsClean() {
+        // for each ticket box
+        $('div:not(.fsmciu_ticket) > div.v-spacing-top-2.text-grey > div > a[href^="/tickets/"]').parent().parent().parent().each(function(){
+
+            // add class to tickets
+            $(this).addClass('fsmciu_ticket');
+
+            // minimize clutter
+            let ticket_link = $(this).find('div > div > a[href^="/tickets/"]');
+            let ticket_text = $(ticket_link).find('span.text-grey');
+            let ticket_icon = $(ticket_text).find('span.bw-icon-file-text');
+            let ticket_text_content = $(ticket_text).text().trim().replace(':', '');
+
+            // add ticket text to title of icon
+            let ticket_text_wrap = $(ticket_text).contents().eq(1).wrap('<span class="fsmciu_ticket_text" />').remove();
+            $(ticket_icon).prop('title', ticket_text_content);
+
+            // remove ticket text
+            $(ticket_text_wrap).text('');
+
+            // make time compact
+            let ticket_time = $(this).find('div.v-spacing-top-2.text-grey > div:nth-child(2) > span.text-grey');
+            $(ticket_time).text( $(ticket_time).text().replace(/ /g, '').replace(/years?/, 'Y').replace(/months?/, 'M').replace(/weeks?/, 'w').replace(/days?/, 'd').replace(/hours?/, 'h').replace(/minutes?/, 'm').replace(' ago', '') )
+            $(ticket_time).parent().addClass('fsmciu_ticket_time');
+
+            let ticket_assigned_line = $(this).find('div:nth-child(2) > div:nth-child(3)');
+            let ticket_assigned = $(this).find('div:nth-child(2) > div:nth-child(3) > span:nth-child(1)');
+            let ticket_message_wrap = $(this).find('div:nth-child(2) > div:nth-child(3)').contents().eq(3).wrap('<span class="fsmciu_ticket_message" />');
+            let ticket_last_message = $(this).find('div:nth-child(2) > div:nth-child(4)');
+
+            // make "Assigned to X" and "Unassigned" (with .bw-icon-notification) compact
+            if ( $(ticket_assigned).text().startsWith('Assigned to ') ) {
+                $(ticket_assigned).html('🔎︎ ' + $(ticket_assigned).text().split('Assigned to ')[1]);
+            } else if ( $(ticket_assigned).text().trim() == 'Unassigned' ) {
+                $(ticket_assigned)[0].childNodes[1].nodeValue = '';
+                $(ticket_assigned).find('.bw-icon-notification').prop('title', 'Unassigned');
+                $(ticket_assigned).find('.bw-icon-notification').text('');
+            }
+            // make "message" count compact
+            $(this).find('.fsmciu_ticket_message').text( '✉ ' + $(ticket_message_wrap).text().split(' ')[0] );
+
+            // make "Last message by X:" compact
+            $(ticket_last_message).text( $(ticket_last_message).text().replace('Last message by ', '') );
+
+            // combine date, assignee and message count
+            $(ticket_assigned_line).prepend('<span class="h-spacing-left-1 h-spacing-1">·</span>');
+            $(this).find('.fsmciu_ticket_time').append( $(ticket_assigned_line).html() );
+            $(ticket_time).parent().cleanWhitespace(); // remove whitespace between elements
+            $(ticket_assigned_line).remove();
+
+            // make "I've uploaded X. Please moderate!" compact
+
+        });
+
+        // make this happen when new ticket links appear that have not the class in their parent yet.
+        setTimeout(ticketsClean, 1000);
+    }
+
+    ticketsClean();
 
 })();
