@@ -21,7 +21,5 @@ Compacts users and lets you filter them
 ## how to install
 
 1. Have Tampermonkey (Chrome) or Greasemonkey (Firefox) extension installed in your browser
-2. Copy the text content of https://raw.githubusercontent.com/qubodup/freesound-mod_user_filter/main/freesound-mod_user_filter.js
-3. Create a new script in the Tampermonkey/Greasemonkey extension
-4. Paste the text (overwriting the defaults) and save
-5. Navigate to https://freesound.org/tickets/moderation/ and enjoy
+2. Install https://raw.githubusercontent.com/qubodup/freesound-mod_user_filter/main/freesound-mod_user_filter.user.js
+3. Navigate to https://freesound.org/tickets/moderation/ and enjoy
