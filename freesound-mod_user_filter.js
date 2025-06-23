@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Compact & Ignored Users in Freesound Moderation
+// @name         Compact & Ignored Users in Freesound Moderation 2025
 // @namespace    https://qubodup.github.io/
-// @version      2024-05-30
+// @version      2025-06-23
 // @description  Reduce burnout
 // @author       qubodup
 // @match        https://freesound.org/tickets/moderation/
@@ -84,8 +84,10 @@
                  .fsmciu_item.fsmciu_hidden, .fsmciu_button_hiddern { display: none; }
                  .fsmciu_ticket {  }
                  .fsmciu_assign_all { color: grey; background-color: white; border: 1px solid grey; margin: auto 20px auto 0; }
+                 .fsmciu_assign_visible1new { color: grey; background-color: white; border: 1px solid grey; margin: auto 0 auto 20px; }
                  .fsmciu_iframe { width:25%; height:25px; float: left; }
                  .fsmciu_clear { clear: both; }
+                 .fsmciu_assigned > div { background-color: silver; }
                  `);
 
     // each user item
@@ -113,6 +115,9 @@
         $(new_ele).text( $(new_ele).text().replace(/unassigned sounds?/,'new').trim() );
         $(allsounds_ele).text( ' / ' + $(allsounds_ele).text().replace(/uploaded sounds?/,'all') );
         $(allsounds_ele).insertAfter($(new_ele));
+
+        // single out single uploads
+        if ($(new_ele).text().split('new')[0] == '1 ') {$(this).addClass('fsmciu_solosound');}
 
         // reformat days / notes count
         $(days_ele).text( $(days_ele).text().replace(/ days? in queue/,'d / ') );
@@ -217,11 +222,28 @@
     // add "assign visible" button
     let fsmciu_assign_visible = $(assign_all).after('<a href="javascript:void(0);" class="btn-primary no-hover fsmciu_assign_visible" title="Assigns all currently visible users\' tickets by opening each assignment link in an iframe"><span class="bw-icon-plus "> </span>Assign only visible</a>');
 
-    $(fsmciu_assign_visible).parent().after('<div class="fsmciu_iframes"></div>');
+    // add 'assign visible "1 new"' button
+    let fsmciu_assign_visible1new = $(fsmciu_assign_visible).parent().append('<a href="javascript:void(0);" class="btn-primary no-hover fsmciu_assign_visible1new" title="Assigns all currently visible users\' tickets with only one new sound by opening each assignment link in an iframe"><span class="bw-icon-plus "> </span>Assign visible "1 new"</a>');
+
+    // add assignment iframe container
+    $(fsmciu_assign_visible1new).parent().after('<div class="fsmciu_iframes"></div>');
 
     // assign all visible interaction
     $('.fsmciu_assign_visible').click(function() {
         $('.fsmciu_item:not(.fsmciu_hidden):not(.fsmciu_assigned)').each( function() {
+            $(this).addClass('fsmciu_assigned');
+            let assign_url = $(this).find('a[href^="/tickets/moderation/assign/"').attr('href');
+            $('.fsmciu_iframes').append('<iframe class="fsmciu_iframe" src="' + assign_url + '" /></iframe>');
+
+        });
+        if ($('.fsmciu_clear').length == 0) {
+            $('.fsmciu_iframes').append("<div class='fsmciu_clear'>No need to wait for the iframes. You can try <a href='" + $('.nav-link[href^="/tickets/moderation/assigned/"]').prop('href') + "'>moderating</a> immediately.</div>");
+        }
+    });
+
+    // assign all visible with only 1 new sound interaction
+    $('.fsmciu_assign_visible1new').click(function() {
+        $('.fsmciu_item:not(.fsmciu_hidden):not(.fsmciu_assigned).fsmciu_solosound').each( function() {
             $(this).addClass('fsmciu_assigned');
             let assign_url = $(this).find('a[href^="/tickets/moderation/assign/"').attr('href');
             $('.fsmciu_iframes').append('<iframe class="fsmciu_iframe" src="' + assign_url + '" /></iframe>');
@@ -259,7 +281,7 @@
 
             // make time compact
             let ticket_time = $(this).find('div.v-spacing-top-2.text-grey > div:nth-child(2) > span.text-grey');
-            $(ticket_time).text( $(ticket_time).text().replace(/ /g, '').replace(/years?/, 'Y').replace(/months?/, 'M').replace(/weeks?/, 'w').replace(/days?/, 'd').replace(/hours?/, 'h').replace(/minutes?/, 'm').replace(' ago', '') )
+            $(ticket_time).text( $(ticket_time).text().replace(/ /g, '').replace(/ /g, '').replace(/years?/, 'Y').replace(/months?/, 'M').replace(/weeks?/, 'w').replace(/days?/, 'd').replace(/hours?/, 'h').replace(/minutes?/, 'm').replace(' ago', '') )
             $(ticket_time).parent().addClass('fsmciu_ticket_time');
 
             let ticket_assigned_line = $(this).find('div:nth-child(2) > div:nth-child(3)');
