@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Compact & Ignored Users in Freesound Moderation 2025
 // @namespace    https://qubodup.github.io/
-// @version      2025-06-23
+// @version      2025-06-29
 // @description  Reduce burnout
 // @author       qubodup
 // @match        https://freesound.org/tickets/moderation/
@@ -100,9 +100,9 @@
         var new_count = $(new_ele).text().split(' ')[0];
         var modnotes_ele = $(this).find('a')[2];
         var modnotes_count = $(modnotes_ele).text().trim().split(' ')[0];
-        var days_ele = $(this).find('span')[0];
+        var days_ele = $(this).find('span.text-grey')[0];
         var days_count = $(days_ele).text().split(' ')[0];
-        var allsounds_ele = $(this).find('span')[1];
+        var allsounds_ele = $(this).find('span.text-grey')[1];
         var allsounds_count = $(allsounds_ele).text().split(' ')[0];
 
         var bottom_bar = $(this).find('div.v-spacing-top-2.padding-bottom-5.center > a');
@@ -121,7 +121,7 @@
 
         // reformat days / notes count
         $(days_ele).text( $(days_ele).text().replace(/ days? in queue/,'d / ') );
-        $(modnotes_ele).text( $(modnotes_ele).text().replace(/mod annotations?/,'notes') );
+        $(modnotes_ele).find('span[class^="annotation-label"').text( $(modnotes_ele).find('span[class^="annotation-label"').text().replace('mod annotation','note') );
         if ( parseInt(modnotes_count) == 0 ) { $(modnotes_ele).addClass('fsmciu_notes-none'); } else { $(modnotes_ele).addClass('fsmciu_notes-any'); }
         $(modnotes_ele).insertAfter($(days_ele));
 
