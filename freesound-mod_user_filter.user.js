@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Compact & Ignored Users in Freesound Moderation 2025
 // @namespace    https://qubodup.github.io/
-// @version      2025-06-29
+// @version      2025-07-14
 // @description  Reduce burnout
 // @author       qubodup
 // @match        https://freesound.org/tickets/moderation/
@@ -177,7 +177,72 @@
 	<label name="fsmciu_filter" for="fsmciu_filter_onlyignore">onlyignore</label>
 	<input type="radio" name="fsmciu_filter" id="fsmciu_filter_onlyundecided" value="onlyundecided">
 	<label name="fsmciu_filter" for="fsmciu_filter_onlyundecided">onlyundecided</label>
+    <a id="fsmciu_save" href="#" title="save local storage filter data to json file">save</a>
+    <a id="fsmciu_load" href="#" title="load json file to local storage filter data">load</a>
 </div>`);
+
+    // save and load functionality
+
+    function getTimestampFilename() {
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        const timestamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+        return `FreesoundIgnoredUsers-${timestamp}.json`;
+    }
+
+    function downloadJSON(obj, filename) {
+        const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function showAlert(msg, isError = false) {
+        alert((isError ? '⚠️ ' : '✅ ') + msg);
+    }
+
+    document.getElementById('fsmciu_save').addEventListener('click', e => {
+        e.preventDefault();
+        localSave();
+        downloadJSON(fsmciu, getTimestampFilename());
+    });
+
+    document.getElementById('fsmciu_load').addEventListener('click', e => {
+        e.preventDefault();
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data || typeof data !== 'object') throw 'Invalid format';
+
+                    // validate expected structure
+                    if (!Array.isArray(data.prefer)) data.prefer = [];
+                    if (!Array.isArray(data.ignore)) data.ignore = [];
+                    if (typeof data.filter !== 'string') data.filter = 'all';
+
+                    fsmciu = data;
+                    localSave();
+                    showAlert(`Loaded ${fsmciu.ignore.length} ignored, ${fsmciu.prefer.length} preferred users (reload the page please)`);
+                } catch (err) {
+                    showAlert('Failed to load JSON: corrupted or invalid file.', true);
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    });
+
+    // Filter
 
     function filterUsers() {
         if ( fsmciu.filter == 'all' ) {
